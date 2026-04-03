@@ -1,3 +1,43 @@
+# Environment variables (contains secrets)
 .env
-.log
-n8n-data
+*.env
+.env.*
+!.env.example
+
+# Docker
+n8n-data/
+postgres-data/
+redis-data/
+traefik-letsencrypt/
+
+# Logs
+*.log
+logs/
+execution-logs/
+
+# n8n local exports (if any)
+*.n8n.json
+*.n8n.backup
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# SSH keys (if you save them locally)
+*.pem
+*.key
+*.ppk
+
+# Local testing receipts (if you download them)
+test-receipts/
+*.jpg.tmp
+*.png.tmp
