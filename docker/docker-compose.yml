@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # Traefik - Reverse Proxy (will configure later)
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    # Full configuration in Phase 3
+
+  # PostgreSQL - Database
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: unless-stopped
+    # Full configuration in Phase 3
+
+  # Redis - Cache/Queue
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    # Full configuration in Phase 3
+
+  # n8n - Workflow Engine
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    # Full configuration in Phase 3
