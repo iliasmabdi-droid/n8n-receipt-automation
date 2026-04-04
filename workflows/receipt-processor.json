@@ -1,0 +1,488 @@
+{
+  "name": "Receipt Processor v1",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "dataPropertyAttachmentsPrefixName": "attachment_",
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7a5ff905-29b1-4813-a1ce-1b379cf4fad4",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7DCcjRXAxThdw7PJ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const binary = $input.item.binary ?? {};\n\nconst allowedMimeTypes = new Set([\n  'image/jpeg',\n  'image/png',\n  'image/webp',\n  'application/pdf',\n]);\n\nconst attachmentKeys = Object.keys(binary).filter((key) => {\n  const file = binary[key];\n  return file && allowedMimeTypes.has(file.mimeType);\n});\n\nif (attachmentKeys.length === 0) {\n  throw new Error(\n    'No receipt image or PDF found in email. Expected a downloaded Gmail attachment in binary data such as attachment_0 or attachment_1.'\n  );\n}\n\n// Pick the first supported attachment\nconst attachmentKey = attachmentKeys[0];\nconst file = binary[attachmentKey];\n\nreturn [\n  {\n    json: {\n      attachmentProperty: attachmentKey,\n      mimeType: file.mimeType || null,\n      fileName: file.fileName || null,\n      isPdf: file.mimeType === 'application/pdf',\n    },\n    binary: {\n      [attachmentKey]: file,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "4c2ceb12-2448-416b-8c71-6ebdf64de8a7",
+      "name": "Pick Receipt Attachment"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "db3e685e-7ab4-4731-98a5-7e4407645fc7",
+              "leftValue": "={{ $json.isPdf }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "29cb6835-8853-44f7-95b2-6642c0df85e5",
+      "name": "Is PDF?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = $json.output[0].content[0].text;\n\nreturn [\n  {\n    json: {\n      Date: parsed.Date ?? null,\n      Vendor: parsed.Vendor ?? null,\n      Amount: parsed.Amount ?? null,\n      Currency: parsed.Currency ?? null,\n      Category: parsed.Category ?? null\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        -128
+      ],
+      "id": "85c59307-1e7e-4f9a-b1ae-6435a1f12899",
+      "name": "Parse Receipt JSON"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1TGc7z51p6A9YHgU7aRRpbVrCkAeZj6dLAKTyPe2O7jc",
+          "mode": "list",
+          "cachedResultName": "Reciept Test Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TGc7z51p6A9YHgU7aRRpbVrCkAeZj6dLAKTyPe2O7jc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TGc7z51p6A9YHgU7aRRpbVrCkAeZj6dLAKTyPe2O7jc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.Date }}",
+            "Vendor": "={{ $json.Vendor }}",
+            "Amount": "={{ $json.Amount }}",
+            "Currency": "={{ $json.Currency }}",
+            "Category": "={{ $json.Category }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Vendor",
+              "displayName": "Vendor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Currency",
+              "displayName": "Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1232,
+        -128
+      ],
+      "id": "1c854e30-75c9-4696-ab9e-7b2a1bc3d076",
+      "name": "Append Receipt Row ",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kk8riKQHRKWWIgy7",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a receipt data extraction assistant.\n\nExtract these fields from the receipt and return exactly one valid JSON object with these keys:\n\n- Date\n- Vendor\n- Amount\n- Currency\n- Category\n\nRules:\n- Date must be in YYYY-MM-DD format. Use the purchase date, not expiry date.\n- Vendor must be the store or business name. Remove words like \"Receipt\", \"Invoice\", and \"Copy\".\n- Amount must be the final total only, as a number with no currency symbol and no commas.\n- Currency must be a 3-letter currency code such as USD, EUR, GBP, CAD, or AUD. If not visible, use USD.\n- Category must be exactly one of:\n  Meals, Travel, Office Supplies, Software, Hardware, Parking, Fuel, Other\n- If a field cannot be found with high confidence, return null.\n- Do not include line items.\n- Do not include tax breakdowns.\n- Return ONLY valid JSON.\n- The response must start with { and end with }."
+            },
+            {
+              "content": "Extract receipt data from this image."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        592,
+        -128
+      ],
+      "id": "e6b91f48-fbfe-47ab-bf67-5b65f18d1b24",
+      "name": "Extract Receipt From PDF",
+      "credentials": {
+        "openAiApi": {
+          "id": "jdWrukyy3cMJKktB",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You extract receipt data from retail receipts.\n\nReturn exactly one JSON object with these keys:\n{\n  \"Date\": string|null,\n  \"Vendor\": string|null,\n  \"Amount\": number|null,\n  \"Currency\": string|null,\n  \"Category\": string|null\n}\n\nRules:\n- Vendor: use the merchant name at the top of the receipt. Remove words like Receipt, Invoice, Copy.\n- Amount: use the final payable total only, not subtotal, not savings, not discounts.\n- Currency: infer from the currency symbol if shown. £ = GBP, $ = USD unless clearly another currency, € = EUR.\n- Date: use the purchase date only. If not visible, return null.\n- Category must be one of: Meals, Travel, Office Supplies, Software, Hardware, Parking, Fuel, Other.\n- If the merchant appears to be clothing, fashion, or department store retail, use Other.\n- Do not return markdown.\n- Do not explain anything.\n- If uncertain, still extract the most likely Vendor, Amount, and Currency when clearly visible."
+            },
+            {
+              "content": "Extract the receipt fields from this image. "
+            },
+            {
+              "type": "image",
+              "imageType": "base64",
+              "binaryPropertyName": "attachment_0"
+            }
+          ]
+        },
+        "simplify": false,
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        592,
+        112
+      ],
+      "id": "ace1e8fe-c826-4eac-9966-b1358e711229",
+      "name": "Extract Receipt From Image",
+      "credentials": {
+        "openAiApi": {
+          "id": "jdWrukyy3cMJKktB",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = $json.output[0].content[0].text;\n\nreturn [\n  {\n    json: {\n      Date: parsed.Date ?? null,\n      Vendor: parsed.Vendor ?? null,\n      Amount: parsed.Amount ?? null,\n      Currency: parsed.Currency ?? null,\n      Category: parsed.Category ?? null\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        112
+      ],
+      "id": "b3c2eaeb-fa95-4c95-85ee-f31c1e92046a",
+      "name": "Parse Receipt JSON1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1TGc7z51p6A9YHgU7aRRpbVrCkAeZj6dLAKTyPe2O7jc",
+          "mode": "list",
+          "cachedResultName": "Reciept Test Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TGc7z51p6A9YHgU7aRRpbVrCkAeZj6dLAKTyPe2O7jc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TGc7z51p6A9YHgU7aRRpbVrCkAeZj6dLAKTyPe2O7jc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{$json.Date}}",
+            "Vendor": "={{$json.Vendor}}",
+            "Amount": "={{$json.Amount}}",
+            "Currency": "={{$json.Currency}}",
+            "Category": "={{$json.Category}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Vendor",
+              "displayName": "Vendor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Currency",
+              "displayName": "Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1232,
+        112
+      ],
+      "id": "6d2674ca-92eb-421f-86bb-b31f7e64965d",
+      "name": "Append Receipt Row",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kk8riKQHRKWWIgy7",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Pick Receipt Attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Receipt Attachment": {
+      "main": [
+        [
+          {
+            "node": "Is PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is PDF?": {
+      "main": [
+        [
+          {
+            "node": "Extract Receipt From PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Receipt From Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Receipt JSON": {
+      "main": [
+        [
+          {
+            "node": "Append Receipt Row ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Receipt From PDF": {
+      "main": [
+        [
+          {
+            "node": "Parse Receipt JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Receipt From Image": {
+      "main": [
+        [
+          {
+            "node": "Parse Receipt JSON1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Receipt JSON1": {
+      "main": [
+        [
+          {
+            "node": "Append Receipt Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "8b32718a-a761-4bea-8b26-686fa5f21d19",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f2d565a7229b05a99c8e5ca52cabe724f302c6f957586a26571e7803a2426862"
+  },
+  "id": "mmJ7aJhCoQiLJ7Wx",
+  "tags": []
+}
